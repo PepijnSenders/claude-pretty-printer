@@ -1,5 +1,11 @@
 # claude-pretty-printer
 
+## 1.2.2
+
+### Patch Changes
+
+- Display session_id in system init message
+
 ## 1.2.1
 
 ### Patch Changes
