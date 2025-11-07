@@ -61,6 +61,7 @@ describe('System Message Formatting', () => {
 
     expect(result).toContain('◆ SYSTEM');
     expect(result).toContain('Claude Code Session Initialized');
+    expect(result).toContain('Session ID: session-123');
     expect(result).toContain('Version: 1.0.0');
     expect(result).toContain('Model: claude-3-sonnet');
     expect(result).toContain('Working Directory: /path/to/project');

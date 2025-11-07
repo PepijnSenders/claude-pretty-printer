@@ -6,7 +6,8 @@ export function formatSystemMessage(message: Extract<SDKMessage, { type: 'system
   if (message.subtype === 'init') {
     const lines: string[] = [];
     lines.push(`\n${pc.bold('Claude Code Session Initialized')}`);
-    lines.push(`\n${pc.dim('Version:')} ${message.claude_code_version}`);
+    lines.push(`\n${pc.dim('Session ID:')} ${message.session_id}`);
+    lines.push(`${pc.dim('Version:')} ${message.claude_code_version}`);
     lines.push(`${pc.dim('Model:')} ${pc.cyan(message.model)}`);
     lines.push(`${pc.dim('Working Directory:')} ${message.cwd}`);
     lines.push(`${pc.dim('Permission Mode:')} ${message.permissionMode}`);
