@@ -23,8 +23,28 @@ export function formatAssistantMessage(
         const entries = Object.entries(toolUseBlock.input);
         if (entries.length > 0) {
           for (const [key, value] of entries) {
-            const formattedValue = formatToolParamValue(value);
-            lines.push(`  ${pc.dim(key)}: ${formattedValue}`);
+            // Special handling for TodoWrite's todos parameter
+            if (toolUseBlock.name === 'TodoWrite' && key === 'todos' && Array.isArray(value)) {
+              lines.push(`  ${pc.dim(key)}:`);
+              for (const todo of value) {
+                if (typeof todo === 'object' && todo !== null) {
+                  const status = todo.status || 'pending';
+                  const statusIcon =
+                    status === 'completed' ? '✓' : status === 'in_progress' ? '⋯' : '○';
+                  const statusColor =
+                    status === 'completed'
+                      ? pc.green
+                      : status === 'in_progress'
+                        ? pc.yellow
+                        : pc.dim;
+                  const content = todo.content || todo.activeForm || '';
+                  lines.push(`    ${statusColor(statusIcon)} ${content}`);
+                }
+              }
+            } else {
+              const formattedValue = formatToolParamValue(value);
+              lines.push(`  ${pc.dim(key)}: ${formattedValue}`);
+            }
           }
         }
       }
