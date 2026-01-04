@@ -4,6 +4,7 @@
     "": {
       "name": "@pepijnsenders/claude-agent-sdk-message-format",
       "dependencies": {
+        "mri": "^1.2.0",
         "picocolors": "^1.1.1",
       },
       "devDependencies": {

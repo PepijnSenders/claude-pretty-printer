@@ -1,5 +1,6 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import pc from 'picocolors';
+import { config } from '../config';
 
 export function formatResultMessage(message: Extract<SDKMessage, { type: 'result' }>): string {
   const lines: string[] = [];
@@ -11,6 +12,11 @@ export function formatResultMessage(message: Extract<SDKMessage, { type: 'result
     lines.push(pc.red('✗ Error: Maximum turns reached'));
   } else if (message.subtype === 'error_during_execution') {
     lines.push(pc.red('✗ Error during execution'));
+  }
+
+  // Skip stats if --no-stats flag is set
+  if (config.noStats) {
+    return lines.join('\n');
   }
 
   lines.push(`\n${pc.bold('Statistics:')}`);

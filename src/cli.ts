@@ -2,13 +2,41 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
+import mri from 'mri';
 import pc from 'picocolors';
+import { config } from './config';
 import { formatMessage } from './index';
 
 /**
  * CLI interface for claude-pretty-printer
- * Supports multiple input methods: stdin, file, or inline JSON
  */
+
+const argv = mri(process.argv.slice(2), {
+  alias: {
+    h: 'help',
+    f: 'filter',
+  },
+  boolean: ['help', 'stats'],
+  string: ['filter'],
+  default: {
+    stats: true,
+  },
+});
+
+// Parse filter types
+const filterTypes: string[] | null = argv.filter
+  ? String(argv.filter)
+      .split(',')
+      .map((t: string) => t.trim())
+  : null;
+
+// Set config from CLI flags (--no-stats sets stats=false)
+config.noStats = argv.stats === false;
+
+function shouldShowMessage(message: { type: string }): boolean {
+  if (!filterTypes) return true;
+  return filterTypes.includes(message.type);
+}
 
 async function processStdin() {
   const rl = createInterface({
@@ -23,6 +51,7 @@ async function processStdin() {
 
       try {
         const message = JSON.parse(line);
+        if (!shouldShowMessage(message)) continue;
         const formatted = formatMessage(message);
         if (formatted.trim()) {
           console.log(formatted);
@@ -49,6 +78,7 @@ function processFile(filePath: string) {
     for (const line of lines) {
       try {
         const message = JSON.parse(line);
+        if (!shouldShowMessage(message)) continue;
         const formatted = formatMessage(message);
         if (formatted.trim()) {
           console.log(formatted);
@@ -66,6 +96,7 @@ function processFile(filePath: string) {
 function processInlineJSON(jsonString: string) {
   try {
     const message = JSON.parse(jsonString);
+    if (!shouldShowMessage(message)) return;
     const formatted = formatMessage(message);
     if (formatted.trim()) {
       console.log(formatted);
@@ -75,40 +106,7 @@ function processInlineJSON(jsonString: string) {
   }
 }
 
-async function main() {
-  const args = process.argv.slice(2);
-
-  try {
-    if (args.length === 0) {
-      // No arguments: read from stdin
-      console.log('');
-      await processStdin();
-    } else if (args.length === 1) {
-      const arg = args[0];
-
-      if (arg.startsWith('{')) {
-        // Inline JSON
-        console.log('');
-        processInlineJSON(arg);
-      } else if (arg === '--help' || arg === '-h') {
-        // Show help (handled below)
-        return;
-      } else {
-        // File path
-        console.log('');
-        processFile(arg);
-      }
-    } else {
-      throw new Error('Too many arguments. Use --help for usage information.');
-    }
-  } catch (error) {
-    console.error(`Error: ${(error as Error).message}`);
-    process.exit(1);
-  }
-}
-
-// Handle help flag
-if (process.argv.includes('--help') || process.argv.includes('-h')) {
+function showHelp() {
   console.log('');
   const box = pc.bold(pc.cyan('┌─────────────────────────────────────────────────────────────┐'));
   const title =
@@ -135,6 +133,17 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
   console.log(pc.cyan('  📺  Pipe from Claude CLI'));
   console.log(pc.dim('      claude -p --output-format json "test" | npx claude-pretty-printer'));
   console.log('');
+  console.log(pc.cyan('  🎯  Filter specific message types'));
+  console.log(
+    pc.dim('      claude -p --output-format json "test" | npx claude-pretty-printer -f result')
+  );
+  console.log(pc.dim('      ... | npx claude-pretty-printer -f result,assistant'));
+  console.log('');
+  console.log(pc.cyan('  📊  Hide stats'));
+  console.log(
+    pc.dim('      claude -p --output-format json "test" | npx claude-pretty-printer --no-stats')
+  );
+  console.log('');
   console.log(pc.cyan('  📁  Read from file'));
   console.log(pc.dim('      npx claude-pretty-printer messages.json'));
   console.log('');
@@ -153,23 +162,53 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
   console.log(pc.dim('  • inline ') + pc.white('- Format single JSON argument'));
   console.log('');
 
-  console.log(pc.bold(pc.magenta('▶ MESSAGE FORMATS:')));
+  console.log(pc.bold(pc.magenta('▶ MESSAGE TYPES:')));
   console.log('');
-  console.log(pc.dim('  Each line should be a complete JSON object representing an SDK message.'));
-  console.log(
-    pc.dim('  Supported types: ') + pc.white('assistant, user, result, system, stream_event')
-  );
+  console.log(pc.dim('  Supported: ') + pc.white('assistant, user, result, system, stream_event'));
   console.log('');
 
   console.log(pc.bold(pc.blue('▶ OPTIONS:')));
   console.log('');
-  console.log(pc.dim('  -h, --help    ') + pc.white('Show this help message'));
+  console.log(pc.dim('  -h, --help       ') + pc.white('Show this help message'));
+  console.log(
+    pc.dim('  -f, --filter     ') + pc.white('Filter by message type(s), comma-separated')
+  );
+  console.log(pc.dim('  --no-stats       ') + pc.white('Hide stats summary in results'));
   console.log('');
 
   console.log(pc.green('✨') + pc.dim(' Happy formatting!'));
   console.log('');
+}
 
-  process.exit(0);
+async function main() {
+  if (argv.help) {
+    showHelp();
+    process.exit(0);
+  }
+
+  const args = argv._;
+
+  try {
+    if (args.length === 0) {
+      console.log('');
+      await processStdin();
+    } else if (args.length === 1) {
+      const arg = String(args[0]);
+
+      if (arg.startsWith('{')) {
+        console.log('');
+        processInlineJSON(arg);
+      } else {
+        console.log('');
+        processFile(arg);
+      }
+    } else {
+      throw new Error('Too many arguments. Use --help for usage information.');
+    }
+  } catch (error) {
+    console.error(`Error: ${(error as Error).message}`);
+    process.exit(1);
+  }
 }
 
 main();
