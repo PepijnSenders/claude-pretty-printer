@@ -219,7 +219,17 @@ Transform JSON output directly from Claude CLI or any other source:
 
 ```bash
 # Read from stdin (pipe from Claude CLI)
-claude -p --output-format json --dangerously-skip-permissions "test" | npx claude-pretty-printer
+claude -p --output-format json "test" | npx claude-pretty-printer
+
+# Filter specific message types
+claude -p --output-format json "test" | npx claude-pretty-printer --filter result
+claude -p --output-format json "test" | npx claude-pretty-printer -f result,assistant
+
+# Hide statistics in result messages
+claude -p --output-format json "test" | npx claude-pretty-printer --no-stats
+
+# Combine filters (great for clean demos!)
+claude -p --output-format json "test" | npx claude-pretty-printer --filter result --no-stats
 
 # Read from file (multi-line JSON)
 npx claude-pretty-printer messages.txt
@@ -227,12 +237,16 @@ npx claude-pretty-printer messages.txt
 # Inline JSON (single message)
 npx claude-pretty-printer '{"type":"assistant","message":{"content":"Hello"}}'
 
-# Format from file with relative path
-npx claude-pretty-printer ./data/messages.json
-
 # Show help
 npx claude-pretty-printer --help
 ```
+
+**CLI Options:**
+| Option | Description |
+|--------|-------------|
+| `-h, --help` | Show help message |
+| `-f, --filter <types>` | Filter by message type(s), comma-separated |
+| `--no-stats` | Hide statistics summary in result messages |
 
 **Input Methods:**
 - **Stdin**: Pipe JSON messages line by line (default behavior)
