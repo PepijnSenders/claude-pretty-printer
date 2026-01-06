@@ -1,5 +1,11 @@
 # claude-pretty-printer
 
+## 1.4.1
+
+### Patch Changes
+
+- Rebuild dist files with updated help text including --filter and --no-stats options
+
 ## 1.3.0
 
 ### Minor Changes
