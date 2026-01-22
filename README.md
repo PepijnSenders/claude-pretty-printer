@@ -42,7 +42,8 @@ Let me read that file for you.
 
 ## Features
 
-- 🎨 **Syntax Highlighting** - Clear colors and formatting for different message types
+- 🎨 **Color Themes** - Choose from multiple color themes (default, monokai, dracula, nord)
+- 📐 **Layout Modes** - Control output density (full, compact, minimal, header)
 - 📦 **Terminal Boxes** - Full-width boxes that adapt to your terminal size
 - 🔍 **Smart Detection** - Automatically formats all message types from the SDK
 - 🚀 **Type-Safe** - Full TypeScript support with proper types
@@ -225,6 +226,17 @@ claude -p --output-format json "test" | npx claude-pretty-printer
 claude -p --output-format json "test" | npx claude-pretty-printer --filter result
 claude -p --output-format json "test" | npx claude-pretty-printer -f result,assistant
 
+# Use a color theme
+claude -p --output-format json "test" | npx claude-pretty-printer --theme dracula
+claude -p --output-format json "test" | npx claude-pretty-printer -t monokai
+
+# Use a layout mode
+claude -p --output-format json "test" | npx claude-pretty-printer --layout compact
+claude -p --output-format json "test" | npx claude-pretty-printer -l minimal
+
+# Combine theme and layout
+claude -p --output-format json "test" | npx claude-pretty-printer -t nord -l compact
+
 # Hide statistics in result messages
 claude -p --output-format json "test" | npx claude-pretty-printer --no-stats
 
@@ -246,6 +258,8 @@ npx claude-pretty-printer --help
 |--------|-------------|
 | `-h, --help` | Show help message |
 | `-f, --filter <types>` | Filter by message type(s), comma-separated |
+| `-t, --theme <name>` | Color theme: `default`, `monokai`, `dracula`, `nord` |
+| `-l, --layout <name>` | Layout mode: `full`, `compact`, `minimal`, `header` |
 | `--no-stats` | Hide statistics summary in result messages |
 
 **Input Methods:**
@@ -322,7 +336,80 @@ messages.forEach(message => {
 });
 ```
 
-## Color Scheme
+## Themes
+
+Choose a color theme that matches your terminal or personal preference:
+
+| Theme | Description |
+|-------|-------------|
+| `default` | Vibrant colors for maximum readability (blue, cyan, magenta, green) |
+| `monokai` | Warm dark theme inspired by the classic editor theme |
+| `dracula` | Purple-centric theme with the popular Dracula palette |
+| `nord` | Arctic, calm theme with muted colors |
+
+```bash
+# Use the dracula theme
+cat messages.json | claude-pp --theme dracula
+
+# Short flag
+cat messages.json | claude-pp -t monokai
+```
+
+## Layouts
+
+Control the verbosity and visual density of the output:
+
+| Layout | Description |
+|--------|-------------|
+| `full` | Default - boxes, icons, full content, stats, tool parameters |
+| `compact` | No boxes, keeps icons and colors, condensed spacing |
+| `minimal` | Single line per message: `◆ ASSISTANT truncated content...` |
+| `header` | Headers only: `◆ ASSISTANT`, `◆ USER`, etc. (no content) |
+
+### Layout Examples
+
+**Full Layout (default):**
+```
+────────────────────────────────────────────────────────────
+◆ ASSISTANT
+Let me read that file for you.
+
+→ Read
+  file_path: "/path/to/file.ts"
+────────────────────────────────────────────────────────────
+```
+
+**Compact Layout:**
+```
+◆ ASSISTANT
+Let me read that file for you.
+
+→ Read
+  file_path: "/path/to/file.ts"
+```
+
+**Minimal Layout:**
+```
+◆ ASSISTANT Let me read that file for you.
+```
+
+**Header Layout:**
+```
+◆ ASSISTANT
+```
+
+```bash
+# Use compact layout
+cat messages.json | claude-pp --layout compact
+
+# Use minimal for quick overview
+cat messages.json | claude-pp -l minimal
+
+# Combine theme and layout
+cat messages.json | claude-pp -t nord -l compact
+```
+
+## Color Scheme (Default Theme)
 
 - 🔵 **Blue** - Assistant messages
 - 🟢 **Green** - User messages, success indicators

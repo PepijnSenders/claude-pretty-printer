@@ -1,5 +1,5 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
-import pc from 'picocolors';
+import { colors } from './colors';
 import {
   formatAssistantMessage,
   formatResultMessage,
@@ -7,7 +7,7 @@ import {
   formatSystemMessage,
   formatUserMessage,
 } from './formatters';
-import { createBox } from './utils';
+import { createBox, isHeaderLayout, isMinimalLayout } from './utils';
 import { validateMessage } from './validation';
 
 /**
@@ -88,7 +88,7 @@ export function formatMessage(message: SDKMessage, showBox = true): string {
 
   switch (message.type) {
     case 'assistant': {
-      header = pc.blue('◆ ASSISTANT');
+      header = colors.assistant('◆ ASSISTANT');
       content = formatAssistantMessage(message);
       break;
     }
@@ -99,12 +99,12 @@ export function formatMessage(message: SDKMessage, showBox = true): string {
       break;
     }
     case 'result': {
-      header = pc.magenta('◆ RESULT');
+      header = colors.result('◆ RESULT');
       content = formatResultMessage(message);
       break;
     }
     case 'system': {
-      header = pc.yellow('◆ SYSTEM');
+      header = colors.system('◆ SYSTEM');
       content = formatSystemMessage(message);
       break;
     }
@@ -113,10 +113,23 @@ export function formatMessage(message: SDKMessage, showBox = true): string {
       return formatStreamEvent(message);
     }
     default: {
-      header = pc.red('◆ UNKNOWN');
+      header = colors.error('◆ UNKNOWN');
       content = `[Unknown message type: ${(message as any).type}]`;
       break;
     }
+  }
+
+  // For header-only layout, just return the header
+  if (isHeaderLayout()) {
+    return header;
+  }
+
+  // For minimal layout, return header + single line content
+  if (isMinimalLayout()) {
+    if (content.trim()) {
+      return `${header} ${content}`;
+    }
+    return header;
   }
 
   // Skip box for empty content or stream events
