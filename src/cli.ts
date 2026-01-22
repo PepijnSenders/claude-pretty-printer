@@ -6,6 +6,8 @@ import mri from 'mri';
 import pc from 'picocolors';
 import { config } from './config';
 import { formatMessage } from './index';
+import { LAYOUT_NAMES, type Layout } from './layouts';
+import { THEME_NAMES } from './themes';
 
 /**
  * CLI interface for claude-pretty-printer
@@ -15,13 +17,31 @@ const argv = mri(process.argv.slice(2), {
   alias: {
     h: 'help',
     f: 'filter',
+    t: 'theme',
+    l: 'layout',
   },
   boolean: ['help', 'stats'],
-  string: ['filter'],
+  string: ['filter', 'theme', 'layout'],
   default: {
     stats: true,
+    theme: 'default',
+    layout: 'full',
   },
 });
+
+// Validate theme
+if (argv.theme && !THEME_NAMES.includes(argv.theme)) {
+  console.error(pc.red(`Error: Unknown theme "${argv.theme}"`));
+  console.error(pc.dim(`Available themes: ${THEME_NAMES.join(', ')}`));
+  process.exit(1);
+}
+
+// Validate layout
+if (argv.layout && !LAYOUT_NAMES.includes(argv.layout as Layout)) {
+  console.error(pc.red(`Error: Unknown layout "${argv.layout}"`));
+  console.error(pc.dim(`Available layouts: ${LAYOUT_NAMES.join(', ')}`));
+  process.exit(1);
+}
 
 // Parse filter types
 const filterTypes: string[] | null = argv.filter
@@ -30,8 +50,10 @@ const filterTypes: string[] | null = argv.filter
       .map((t: string) => t.trim())
   : null;
 
-// Set config from CLI flags (--no-stats sets stats=false)
+// Set config from CLI flags
 config.noStats = argv.stats === false;
+config.theme = argv.theme as string;
+config.layout = argv.layout as Layout;
 
 function shouldShowMessage(message: { type: string }): boolean {
   if (!filterTypes) return true;
@@ -139,6 +161,17 @@ function showHelp() {
   );
   console.log(pc.dim('      ... | npx claude-pretty-printer -f result,assistant'));
   console.log('');
+  console.log(pc.cyan('  🎨  Use a color theme'));
+  console.log(pc.dim('      ... | npx claude-pretty-printer --theme dracula'));
+  console.log(pc.dim('      ... | npx claude-pretty-printer -t monokai'));
+  console.log('');
+  console.log(pc.cyan('  📐  Use a layout mode'));
+  console.log(pc.dim('      ... | npx claude-pretty-printer --layout compact'));
+  console.log(pc.dim('      ... | npx claude-pretty-printer -l minimal'));
+  console.log('');
+  console.log(pc.cyan('  🔧  Combine theme and layout'));
+  console.log(pc.dim('      ... | npx claude-pretty-printer -t nord -l compact'));
+  console.log('');
   console.log(pc.cyan('  📊  Hide stats'));
   console.log(
     pc.dim('      claude -p --output-format json "test" | npx claude-pretty-printer --no-stats')
@@ -169,11 +202,29 @@ function showHelp() {
 
   console.log(pc.bold(pc.blue('▶ OPTIONS:')));
   console.log('');
-  console.log(pc.dim('  -h, --help       ') + pc.white('Show this help message'));
+  console.log(pc.dim('  -h, --help         ') + pc.white('Show this help message'));
   console.log(
-    pc.dim('  -f, --filter     ') + pc.white('Filter by message type(s), comma-separated')
+    pc.dim('  -f, --filter       ') + pc.white('Filter by message type(s), comma-separated')
   );
-  console.log(pc.dim('  --no-stats       ') + pc.white('Hide stats summary in results'));
+  console.log(pc.dim('  -t, --theme        ') + pc.white('Color theme (see below)'));
+  console.log(pc.dim('  -l, --layout       ') + pc.white('Layout mode (see below)'));
+  console.log(pc.dim('  --no-stats         ') + pc.white('Hide stats summary in results'));
+  console.log('');
+
+  console.log(pc.bold(pc.cyan('▶ THEMES:')));
+  console.log('');
+  console.log(pc.dim('  default  ') + pc.white('Vibrant colors for maximum readability'));
+  console.log(pc.dim('  monokai  ') + pc.white('Warm dark theme with classic Monokai colors'));
+  console.log(pc.dim('  dracula  ') + pc.white('Purple-centric theme with Dracula palette'));
+  console.log(pc.dim('  nord     ') + pc.white('Arctic calm theme with muted colors'));
+  console.log('');
+
+  console.log(pc.bold(pc.cyan('▶ LAYOUTS:')));
+  console.log('');
+  console.log(pc.dim('  full     ') + pc.white('Full output with boxes, icons, and all details'));
+  console.log(pc.dim('  compact  ') + pc.white('Condensed output without boxes'));
+  console.log(pc.dim('  minimal  ') + pc.white('Single line per message with truncated content'));
+  console.log(pc.dim('  header   ') + pc.white('Headers only, no content'));
   console.log('');
 
   console.log(pc.green('✨') + pc.dim(' Happy formatting!'));

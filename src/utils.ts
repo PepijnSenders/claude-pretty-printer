@@ -1,4 +1,6 @@
-import pc from 'picocolors';
+import { colors } from './colors';
+import { config } from './config';
+import { getLayout } from './layouts';
 
 /**
  * Get terminal width, defaulting to 80 if not available
@@ -16,14 +18,90 @@ export function createLine(char: string, width?: number): string {
 }
 
 /**
- * Wraps content in a box with header
+ * Wraps content in a box with header (layout-aware)
+ * For non-full layouts, returns just header + content without box
  */
 export function createBox(header: string, content: string): string {
+  const layout = getLayout(config.layout);
+
+  // For non-full layouts, skip the box
+  if (!layout.showBox) {
+    if (content.trim()) {
+      return `${header}\n${content}`;
+    }
+    return header;
+  }
+
+  // Full layout: wrap in box
   const termWidth = getTerminalWidth();
   const topLine = createLine('─', termWidth);
   const bottomLine = createLine('─', termWidth);
 
-  return `${pc.dim(topLine)}\n${header}\n${content}\n${pc.dim(bottomLine)}`;
+  return `${colors.muted(topLine)}\n${header}\n${content}\n${colors.muted(bottomLine)}`;
+}
+
+/**
+ * Truncates text to a maximum length with ellipsis
+ */
+export function truncateText(text: string, maxLength: number): string {
+  if (maxLength <= 0 || text.length <= maxLength) {
+    return text;
+  }
+  return `${text.slice(0, maxLength - 3)}...`;
+}
+
+/**
+ * Gets the first line of text, truncated if needed
+ */
+export function getFirstLine(text: string, maxLength = 80): string {
+  const firstLine = text.split('\n')[0] || '';
+  return truncateText(firstLine.trim(), maxLength);
+}
+
+/**
+ * Check if current layout should show tool parameters
+ */
+export function shouldShowToolParams(): boolean {
+  const layout = getLayout(config.layout);
+  return layout.showToolParams;
+}
+
+/**
+ * Check if current layout should show stats
+ */
+export function shouldShowStats(): boolean {
+  const layout = getLayout(config.layout);
+  return layout.showStats && !config.noStats;
+}
+
+/**
+ * Check if current layout should truncate content
+ */
+export function shouldTruncateContent(): boolean {
+  const layout = getLayout(config.layout);
+  return layout.truncateContent;
+}
+
+/**
+ * Get max content length for current layout
+ */
+export function getMaxContentLength(): number {
+  const layout = getLayout(config.layout);
+  return layout.maxContentLength;
+}
+
+/**
+ * Check if current layout is minimal (single line)
+ */
+export function isMinimalLayout(): boolean {
+  return config.layout === 'minimal';
+}
+
+/**
+ * Check if current layout is header-only
+ */
+export function isHeaderLayout(): boolean {
+  return config.layout === 'header';
 }
 
 /**

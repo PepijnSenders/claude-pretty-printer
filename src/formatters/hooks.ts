@@ -1,18 +1,31 @@
-import pc from 'picocolors';
+import { colors } from '../colors';
+import { isHeaderLayout, isMinimalLayout } from '../utils';
 
 /**
  * Formats PreToolUse hook callback messages
  */
 function formatPreToolUseHook(message: any): string {
+  // Header-only layout handled by system.ts
+  if (isHeaderLayout()) {
+    return '';
+  }
+
+  // Minimal layout
+  if (isMinimalLayout()) {
+    return `${colors.secondary('🔧')} Pre-Tool: ${colors.primary(message.tool_name)}`;
+  }
+
   const lines: string[] = [];
-  lines.push(`\n${pc.blue('🔧')} ${pc.bold('Pre-Tool Use:')} ${pc.cyan(message.tool_name)}`);
+  lines.push(
+    `\n${colors.secondary('🔧')} ${colors.bold('Pre-Tool Use:')} ${colors.primary(message.tool_name)}`
+  );
 
   if (message.cwd) {
-    lines.push(`   ${pc.dim('Working directory:')} ${message.cwd}`);
+    lines.push(`   ${colors.muted('Working directory:')} ${message.cwd}`);
   }
 
   if (message.tool_input) {
-    lines.push(`\n${pc.dim('Tool input:')}`);
+    lines.push(`\n${colors.muted('Tool input:')}`);
     const inputStr =
       typeof message.tool_input === 'string'
         ? message.tool_input
@@ -20,7 +33,7 @@ function formatPreToolUseHook(message: any): string {
     lines.push(
       inputStr
         .split('\n')
-        .map((l: string) => `  ${pc.gray(l)}`)
+        .map((l: string) => `  ${colors.gray(l)}`)
         .join('\n')
     );
   }
@@ -32,15 +45,25 @@ function formatPreToolUseHook(message: any): string {
  * Formats PostToolUse hook callback messages
  */
 function formatPostToolUseHook(message: any): string {
+  if (isHeaderLayout()) {
+    return '';
+  }
+
+  if (isMinimalLayout()) {
+    return `${colors.success('✅')} Post-Tool: ${colors.primary(message.tool_name)}`;
+  }
+
   const lines: string[] = [];
-  lines.push(`\n${pc.green('✅')} ${pc.bold('Post-Tool Use:')} ${pc.cyan(message.tool_name)}`);
+  lines.push(
+    `\n${colors.success('✅')} ${colors.bold('Post-Tool Use:')} ${colors.primary(message.tool_name)}`
+  );
 
   if (message.cwd) {
-    lines.push(`   ${pc.dim('Working directory:')} ${message.cwd}`);
+    lines.push(`   ${colors.muted('Working directory:')} ${message.cwd}`);
   }
 
   if (message.tool_response !== undefined) {
-    lines.push(`\n${pc.dim('Tool response:')}`);
+    lines.push(`\n${colors.muted('Tool response:')}`);
     const responseStr =
       typeof message.tool_response === 'string'
         ? message.tool_response
@@ -50,13 +73,13 @@ function formatPostToolUseHook(message: any): string {
     const maxLength = 500;
     const truncatedResponse =
       responseStr.length > maxLength
-        ? responseStr.substring(0, maxLength) + pc.dim('... (truncated)')
+        ? responseStr.substring(0, maxLength) + colors.muted('... (truncated)')
         : responseStr;
 
     lines.push(
       truncatedResponse
         .split('\n')
-        .map((l: string) => `  ${pc.gray(l)}`)
+        .map((l: string) => `  ${colors.gray(l)}`)
         .join('\n')
     );
   }
@@ -68,15 +91,23 @@ function formatPostToolUseHook(message: any): string {
  * Formats Notification hook callback messages
  */
 function formatNotificationHook(message: any): string {
+  if (isHeaderLayout()) {
+    return '';
+  }
+
+  if (isMinimalLayout()) {
+    return `${colors.warning('🔔')} ${message.title || 'Notification'}`;
+  }
+
   const lines: string[] = [];
-  lines.push(`\n${pc.yellow('🔔')} ${pc.bold('Notification')}`);
+  lines.push(`\n${colors.warning('🔔')} ${colors.bold('Notification')}`);
 
   if (message.title) {
-    lines.push(`   ${pc.cyan(message.title)}`);
+    lines.push(`   ${colors.primary(message.title)}`);
   }
 
   if (message.message) {
-    lines.push(`\n${pc.dim('Message:')}`);
+    lines.push(`\n${colors.muted('Message:')}`);
     lines.push(
       message.message
         .split('\n')
@@ -86,7 +117,7 @@ function formatNotificationHook(message: any): string {
   }
 
   if (message.cwd) {
-    lines.push(`\n   ${pc.dim('Location:')} ${message.cwd}`);
+    lines.push(`\n   ${colors.muted('Location:')} ${message.cwd}`);
   }
 
   return lines.join('\n');
@@ -96,19 +127,28 @@ function formatNotificationHook(message: any): string {
  * Formats UserPromptSubmit hook callback messages
  */
 function formatUserPromptSubmitHook(message: any): string {
+  if (isHeaderLayout()) {
+    return '';
+  }
+
+  if (isMinimalLayout()) {
+    const preview = message.prompt?.substring(0, 40) || '';
+    return `${colors.accent('📝')} Prompt: ${preview}${message.prompt?.length > 40 ? '...' : ''}`;
+  }
+
   const lines: string[] = [];
-  lines.push(`\n${pc.magenta('📝')} ${pc.bold('User Prompt Submitted')}`);
+  lines.push(`\n${colors.accent('📝')} ${colors.bold('User Prompt Submitted')}`);
 
   if (message.cwd) {
-    lines.push(`   ${pc.dim('Working directory:')} ${message.cwd}`);
+    lines.push(`   ${colors.muted('Working directory:')} ${message.cwd}`);
   }
 
   if (message.prompt) {
-    lines.push(`\n${pc.dim('Prompt:')}`);
+    lines.push(`\n${colors.muted('Prompt:')}`);
     // Show first 200 characters of prompt to avoid overwhelming output
     const preview =
       message.prompt.length > 200
-        ? message.prompt.substring(0, 200) + pc.dim('... (truncated)')
+        ? message.prompt.substring(0, 200) + colors.muted('... (truncated)')
         : message.prompt;
 
     lines.push(
@@ -126,27 +166,36 @@ function formatUserPromptSubmitHook(message: any): string {
  * Formats SessionStart hook callback messages
  */
 function formatSessionStartHook(message: any): string {
-  const lines: string[] = [];
-  const sourceIcons = {
-    startup: pc.green('🚀'),
-    resume: pc.blue('▶️'),
-    clear: pc.yellow('🔄'),
-    compact: pc.cyan('📦'),
+  if (isHeaderLayout()) {
+    return '';
+  }
+
+  const sourceIcons: Record<string, string> = {
+    startup: colors.success('🚀'),
+    resume: colors.secondary('▶️'),
+    clear: colors.warning('🔄'),
+    compact: colors.info('📦'),
   };
 
-  const icon = sourceIcons[message.source as keyof typeof sourceIcons] || pc.gray('📍');
-  lines.push(`\n${icon} ${pc.bold('Session Started')} ${pc.dim(`(${message.source})`)}`);
+  const icon = sourceIcons[message.source] || colors.muted('📍');
+
+  if (isMinimalLayout()) {
+    return `${icon} Session started (${message.source})`;
+  }
+
+  const lines: string[] = [];
+  lines.push(`\n${icon} ${colors.bold('Session Started')} ${colors.muted(`(${message.source})`)}`);
 
   if (message.transcript_path) {
-    lines.push(`   ${pc.dim('Transcript:')} ${message.transcript_path}`);
+    lines.push(`   ${colors.muted('Transcript:')} ${message.transcript_path}`);
   }
 
   if (message.cwd) {
-    lines.push(`   ${pc.dim('Working directory:')} ${message.cwd}`);
+    lines.push(`   ${colors.muted('Working directory:')} ${message.cwd}`);
   }
 
   if (message.permission_mode) {
-    lines.push(`   ${pc.dim('Permission mode:')} ${message.permission_mode}`);
+    lines.push(`   ${colors.muted('Permission mode:')} ${message.permission_mode}`);
   }
 
   return lines.join('\n');
@@ -156,19 +205,27 @@ function formatSessionStartHook(message: any): string {
  * Formats SessionEnd hook callback messages
  */
 function formatSessionEndHook(message: any): string {
+  if (isHeaderLayout()) {
+    return '';
+  }
+
+  if (isMinimalLayout()) {
+    return `${colors.error('🛑')} Session ended${message.reason ? ` (${message.reason})` : ''}`;
+  }
+
   const lines: string[] = [];
-  lines.push(`\n${pc.red('🛑')} ${pc.bold('Session Ended')}`);
+  lines.push(`\n${colors.error('🛑')} ${colors.bold('Session Ended')}`);
 
   if (message.reason) {
-    lines.push(`   ${pc.dim('Reason:')} ${pc.yellow(message.reason)}`);
+    lines.push(`   ${colors.muted('Reason:')} ${colors.warning(message.reason)}`);
   }
 
   if (message.transcript_path) {
-    lines.push(`   ${pc.dim('Transcript:')} ${message.transcript_path}`);
+    lines.push(`   ${colors.muted('Transcript:')} ${message.transcript_path}`);
   }
 
   if (message.cwd) {
-    lines.push(`   ${pc.dim('Working directory:')} ${message.cwd}`);
+    lines.push(`   ${colors.muted('Working directory:')} ${message.cwd}`);
   }
 
   return lines.join('\n');
@@ -178,22 +235,31 @@ function formatSessionEndHook(message: any): string {
  * Formats Stop hook callback messages
  */
 function formatStopHook(message: any): string {
+  if (isHeaderLayout()) {
+    return '';
+  }
+
+  const stopIcon = message.stop_hook_active ? colors.warning('⏸️') : colors.error('🛑');
+
+  if (isMinimalLayout()) {
+    return `${stopIcon} Stop hook ${message.stop_hook_active ? 'active' : 'inactive'}`;
+  }
+
   const lines: string[] = [];
-  const stopIcon = message.stop_hook_active ? pc.yellow('⏸️') : pc.red('🛑');
-  lines.push(`\n${stopIcon} ${pc.bold('Stop Hook Triggered')}`);
+  lines.push(`\n${stopIcon} ${colors.bold('Stop Hook Triggered')}`);
 
   if (message.stop_hook_active) {
-    lines.push(`   ${pc.yellow('Stop hook is active')}`);
+    lines.push(`   ${colors.warning('Stop hook is active')}`);
   } else {
-    lines.push(`   ${pc.dim('Stop hook is inactive')}`);
+    lines.push(`   ${colors.muted('Stop hook is inactive')}`);
   }
 
   if (message.cwd) {
-    lines.push(`   ${pc.dim('Working directory:')} ${message.cwd}`);
+    lines.push(`   ${colors.muted('Working directory:')} ${message.cwd}`);
   }
 
   if (message.transcript_path) {
-    lines.push(`   ${pc.dim('Transcript:')} ${message.transcript_path}`);
+    lines.push(`   ${colors.muted('Transcript:')} ${message.transcript_path}`);
   }
 
   return lines.join('\n');
@@ -203,22 +269,31 @@ function formatStopHook(message: any): string {
  * Formats SubagentStop hook callback messages
  */
 function formatSubagentStopHook(message: any): string {
+  if (isHeaderLayout()) {
+    return '';
+  }
+
+  const stopIcon = message.stop_hook_active ? colors.warning('⏸️') : colors.error('🛑');
+
+  if (isMinimalLayout()) {
+    return `${stopIcon} Subagent stop ${message.stop_hook_active ? 'active' : 'inactive'}`;
+  }
+
   const lines: string[] = [];
-  const stopIcon = message.stop_hook_active ? pc.yellow('⏸️') : pc.red('🛑');
-  lines.push(`\n${stopIcon} ${pc.bold('Subagent Stop Hook Triggered')}`);
+  lines.push(`\n${stopIcon} ${colors.bold('Subagent Stop Hook Triggered')}`);
 
   if (message.stop_hook_active) {
-    lines.push(`   ${pc.yellow('Stop hook is active')}`);
+    lines.push(`   ${colors.warning('Stop hook is active')}`);
   } else {
-    lines.push(`   ${pc.dim('Stop hook is inactive')}`);
+    lines.push(`   ${colors.muted('Stop hook is inactive')}`);
   }
 
   if (message.cwd) {
-    lines.push(`   ${pc.dim('Working directory:')} ${message.cwd}`);
+    lines.push(`   ${colors.muted('Working directory:')} ${message.cwd}`);
   }
 
   if (message.transcript_path) {
-    lines.push(`   ${pc.dim('Transcript:')} ${message.transcript_path}`);
+    lines.push(`   ${colors.muted('Transcript:')} ${message.transcript_path}`);
   }
 
   return lines.join('\n');
@@ -228,33 +303,42 @@ function formatSubagentStopHook(message: any): string {
  * Formats PreCompact hook callback messages
  */
 function formatPreCompactHook(message: any): string {
-  const lines: string[] = [];
-  const triggerIcons = {
-    manual: pc.blue('👆'),
-    auto: pc.cyan('🤖'),
+  if (isHeaderLayout()) {
+    return '';
+  }
+
+  const triggerIcons: Record<string, string> = {
+    manual: colors.secondary('👆'),
+    auto: colors.info('🤖'),
   };
 
-  const icon = triggerIcons[message.trigger as keyof typeof triggerIcons] || pc.gray('📦');
-  lines.push(`\n${icon} ${pc.bold('Pre-Compaction')} ${pc.dim(`(${message.trigger})`)}`);
+  const icon = triggerIcons[message.trigger] || colors.muted('📦');
+
+  if (isMinimalLayout()) {
+    return `${icon} Pre-compaction (${message.trigger})`;
+  }
+
+  const lines: string[] = [];
+  lines.push(`\n${icon} ${colors.bold('Pre-Compaction')} ${colors.muted(`(${message.trigger})`)}`);
 
   if (message.custom_instructions) {
-    lines.push(`\n${pc.dim('Custom instructions:')}`);
+    lines.push(`\n${colors.muted('Custom instructions:')}`);
     lines.push(
       message.custom_instructions
         .split('\n')
-        .map((l: string) => `  ${pc.cyan(l)}`)
+        .map((l: string) => `  ${colors.primary(l)}`)
         .join('\n')
     );
   } else {
-    lines.push(`   ${pc.dim('No custom instructions')}`);
+    lines.push(`   ${colors.muted('No custom instructions')}`);
   }
 
   if (message.transcript_path) {
-    lines.push(`\n   ${pc.dim('Transcript:')} ${message.transcript_path}`);
+    lines.push(`\n   ${colors.muted('Transcript:')} ${message.transcript_path}`);
   }
 
   if (message.cwd) {
-    lines.push(`   ${pc.dim('Working directory:')} ${message.cwd}`);
+    lines.push(`   ${colors.muted('Working directory:')} ${message.cwd}`);
   }
 
   return lines.join('\n');
